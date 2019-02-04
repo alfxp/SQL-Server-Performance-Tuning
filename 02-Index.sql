@@ -300,3 +300,17 @@ GO
 ALTER INDEX ALL ON dbo.TABLE1
 REORGANIZE ; 
 GO
+
+
+-- You'll want to run this after your server has been up and running a normal workload for a while.  If this returns no results, that's good news and indicates that you're not missing any indexes that are obvious enough for the DMV to detect.  If it does return some suggestions, even better: you just improved your server's perf with almost no work.
+
+-- While to me this feature is so cool it almost seems magical, it does have a few limitations you should be aware of:
+
+-- It's not as smart as the Database Engine Tuning Advisor.  If you have identified a query that you know is expensive and needs some help, don't pass up DTA just because the missing index DMVs didn't have any suggestions.  DTA might still be able to help. 
+-- The missing index DMVs don't take into account the overhead that new indexes can create (extra disk space, slight impact on insert/delete perf, etc). DTA does take this into account, however.
+-- The "improvement_measure" column in this query's output is a rough indicator of the (estimated) improvement that might be seen if the index was created.  This is a unitless number, and has meaning only relative the same number for other indexes.  (It's a combination of the avg_total_user_cost, avg_user_impact, user_seeks, and user_scans columns in sys.dm_db_missing_index_group_stats.)
+-- The missing index DMVs don't make recommendation about whether a proposed index should be clustered or nonclustered.  This has workload-wide ramifications, while these DMVs focus only on the indexes that would benefit individual queries.  (DTA can do this, however.)
+-- Won't recommend partitioning.
+-- It's possible that the DMVs may not recommend the ideal column order for multi-column indexes.
+-- The DMV tracks information on no more than 500 missing indexes.
+-- If you're a typical SQL user, you may not be using these DMVs yet.  If you look around, though, there are a few places where they are in use. One is in the SP2 Performance Dashboard reports.  Another is the Perf Stats Script that SQL PSS uses.  And if you think the missing index DMVs are useful, check out this set of scripts that builds on the missing index DMVs to simulate an "auto create index" feature.  Also, you should be aware there is similar missing index info output in the new XML showplan format in SQL 2005.  If you are already focused on a poorly-performing query, I would start with the plan view of missing indexes (followed by DTA) rather than the DMVs. 
